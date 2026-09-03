@@ -63,9 +63,37 @@ function playerBrief(player: Player): string {
       `  APSKAIČIUOTI Modern taškai: ${s.modernFP.toFixed(1)} už rungtynes`,
       "",
     );
+  } else if (player.lastSeasonOther) {
+    const o = player.lastSeasonOther;
+    const num = (value: number | null, unit = "") =>
+      value === null ? "nežinoma" : `${value}${unit}`;
+
+    lines.push(
+      `PERNYKŠTIS SEZONAS KITOJE LYGOJE (${o.league}, ${o.club}, ${o.season}):`,
+      `  rungtynės ${num(o.gamesPlayed)}, minutės ${num(o.minutesPerGame)}`,
+      `  taškai ${num(o.points)}, atkovoti ${num(o.totalRebounds)}` +
+        (o.offensiveRebounds !== null
+          ? ` (puol. ${o.offensiveRebounds} / gyn. ${o.defensiveRebounds})`
+          : ""),
+      `  perdavimai ${num(o.assists)}, perimti ${num(o.steals)}, blokai ${num(o.blocks)}, klaidos ${num(o.turnovers)}`,
+      `  taiklumas: dvitaškiai+tritaškiai ${o.fgPct ?? "nežinoma"}, tritaškiai ${o.fg3Pct ?? "nežinoma"}, baudos ${o.ftPct ?? "nežinoma"}`,
+      "",
+      "SVARBU dėl šių skaičių:",
+      "  - Tai NE Eurolygos statistika ir NE Modern taškai. Modern taškų iš jos suskaičiuoti",
+      "    neįmanoma, nes ši lyga neskelbia išprovokuotų pražangų ir gautų blokų.",
+      "  - Kitų lygų skaičiai tiesiogiai neperkeliami. NBA vaidmuo ir minutės Eurolygoje",
+      "    dažnai visai kitokie; ACB, NCAA ar kitų lygų rezultatyvumas paprastai krenta.",
+      "  - Naudok tai kaip kontekstą apie vaidmenį ir formą, ne kaip prognozės pagrindą.",
+      o.verified
+        ? ""
+        : `  - DĖMESIO: šaltinis pateikė apytikslius ar dalinius duomenis${o.note ? ` (${o.note})` : ""}. Pasitikėjimą nustatyk žemesnį.`,
+      o.verified && o.note ? `  - Pastaba: ${o.note}` : "",
+      "",
+    );
   } else {
     lines.push(
-      "PERNYKŠTIS SEZONAS: duomenų NĖRA — pernai nežaidė nei Eurolygoje, nei EuroCupe.",
+      "PERNYKŠTIS SEZONAS: duomenų NĖRA — pernai nežaidė nei Eurolygoje, nei EuroCupe,",
+      "o kitų lygų statistikos taip pat neturime.",
       "Statistikos neišgalvok. Vertink tik iš konteksto ir pasitikėjimą nustatyk žemesnį.",
       "",
     );

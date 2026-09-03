@@ -23,6 +23,7 @@ import type {
   CompetitionBlock,
   CompetitionRival,
   League,
+  OtherLeagueLine,
   Player,
   PlayoffLine,
   Position,
@@ -187,6 +188,7 @@ export function mergePlayers(
   roster: RosterPlayer[],
   stats: StatsIndex,
   manual: ManualPairing = {},
+  otherLeagues: Record<string, OtherLeagueLine> = {},
 ): MergeResult {
   const manualLookup = new Map<string, { line: SeasonLine; name: string }>();
   for (const entry of [...stats.elLines, ...stats.ecLines]) {
@@ -251,16 +253,18 @@ export function mergePlayers(
     if (line) matchedCount++;
 
     const playoffs = apiName ? (stats.playoffsByName.get(apiName) ?? null) : null;
-    const lastLeague: League = line ? LEAGUE_CODE[line.league] : "-";
+    const other = line ? null : (otherLeagues[person.name] ?? null);
+    // „kita" — filtrų juostoje toks variantas jau yra, tik iki šiol niekas jo negavo.
+    const lastLeague: League = line ? LEAGUE_CODE[line.league] : other ? "kita" : "-";
 
     return {
       id: person.id,
       name: person.name,
       pos: person.position,
       team: person.currentTeam,
-      lastTeam: line?.club ?? "—",
+      lastTeam: line?.club ?? other?.club ?? "—",
       lastLeague,
-      min: line?.minutesPerGame ?? 0,
+      min: line?.minutesPerGame ?? other?.minutesPerGame ?? 0,
       // Kol nėra AI vertinimo, pernykštis Modern FP yra prognozė.
       fp: line?.modernFP ?? 0,
       status: person.health,
@@ -280,6 +284,8 @@ export function mergePlayers(
       fantasyPrice: person.fantasyPrice,
       lastSeasonModernFP: line?.modernFP ?? null,
       lastSeason: line,
+      // Kitos lygos statistika aktuali tik tada, kai EL/EC duomenų nėra.
+      lastSeasonOther: other,
       playoffs,
       evaluation: null,
       matchLevel,

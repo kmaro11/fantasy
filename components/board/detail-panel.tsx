@@ -32,7 +32,8 @@ export function DetailPanel() {
   if (!player) return null;
 
   const taken = takenMap(history).get(player.id);
-  const noData = player.lastLeague === "-";
+  const other = player.lastSeasonOther ?? null;
+  const noData = player.lastLeague === "-" && !other;
   const comp = competition(player, players);
   const conf = confidence(player);
   const evaluation = player.evaluation;
@@ -63,7 +64,42 @@ export function DetailPanel() {
         </button>
       </div>
 
-      {noData ? (
+      {other ? (
+        <div className="px-3.5 pt-3 pb-1.5">
+          <SectionLabel>{`PERNYKŠTĖ STATISTIKA · ${other.league} · ${other.club}`}</SectionLabel>
+          <div className="grid grid-cols-4 gap-px border border-line bg-line">
+            {[
+              { k: "RUNG", v: other.gamesPlayed },
+              { k: "MIN", v: other.minutesPerGame },
+              { k: "TŠK", v: other.points },
+              { k: "ATK", v: other.totalRebounds },
+              { k: "REZ.PERD", v: other.assists },
+              { k: "PERIMTI", v: other.steals },
+              { k: "BLOKAI", v: other.blocks },
+              { k: "KLAIDOS", v: other.turnovers },
+            ].map((o) => (
+              <div key={o.k} className="bg-cell px-1.5 py-[7px]">
+                <div className="text-[9px] text-fg-dim tracking-[0.06em]">{o.k}</div>
+                <div className="mt-0.5 font-medium font-mono text-[15px] text-fg-strong">
+                  {o.v === null || o.v === undefined ? "—" : o.v}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 rounded-[3px] border border-warn-line bg-warn-bg px-[11px] py-[9px] text-[11px] text-warn-fg leading-[1.45]">
+            Tai <b>{other.league}</b>, ne Eurolyga — Modern taškai neskaičiuojami, nes ši lyga
+            neskelbia išprovokuotų pražangų ir gautų blokų. Skaičiai rodomi kaip kontekstas apie
+            vaidmenį, ne kaip prognozė.
+            {!other.verified && (
+              <>
+                {" "}
+                <b>Duomenys apytiksliai</b>
+                {other.note ? ` (${other.note})` : "."}
+              </>
+            )}
+          </div>
+        </div>
+      ) : noData ? (
         <div className="mx-3.5 my-3 rounded-[3px] border border-warn-line bg-warn-bg px-[11px] py-[9px] text-[12px] text-warn-fg leading-[1.45]">
           Pernai nežaidė nei Eurolygoje, nei EuroCupe — <b>statistikos nėra</b>. Vertinimas paremtas
           tik kontekstu (rolė, konkurencija, treniruočių informacija).

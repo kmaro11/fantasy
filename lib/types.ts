@@ -45,6 +45,47 @@ export interface SeasonLine {
   modernFP: number;
 }
 
+/**
+ * Pernykštė statistika iš KITOS lygos (NBA, ACB, BBL, NCAA ir pan.).
+ *
+ * Sąmoningai BE `modernFP`. Modern taškų iš šių duomenų suskaičiuoti neįmanoma:
+ * nei NBA, nei NCAA neskelbia dviejų formulės laukų — `foulsDrawn` (+1 už
+ * kiekvieną; Eurolygoje tai 2-4 taškai per rungtynes) ir `blocksAgainst`
+ * (-0.5). Suskaičiuotas skaičius būtų sistemingai per mažas ir atsidurtų tame
+ * pačiame stulpelyje šalia tikrų Eurolygos reikšmių.
+ *
+ * Todėl tai yra KONTEKSTAS AI vertinimui, o ne FP reikšmė. Promptas to ir
+ * prašo: kitų lygų skaičiai Eurolygoje krenta ~15-25 %, o NBA vaidmuo ir
+ * minutės neperkeliami tiesiogiai.
+ */
+export interface OtherLeagueLine {
+  /** „NBA", „ACB", „NCAA", „BSL", „BBL"… */
+  league: string;
+  club: string;
+  season: string;
+  gamesPlayed: number | null;
+  minutesPerGame: number | null;
+  points: number | null;
+  offensiveRebounds: number | null;
+  defensiveRebounds: number | null;
+  totalRebounds: number | null;
+  assists: number | null;
+  steals: number | null;
+  blocks: number | null;
+  turnovers: number | null;
+  fgPct: string | null;
+  fg3Pct: string | null;
+  ftPct: string | null;
+  /** Iš kur paimta — kad skaičių būtų galima atsekti. */
+  source: string;
+  /**
+   * `false`, jei šaltinis pateikė apytikslius ar dalinius duomenis. Tokie
+   * skaičiai AI promptui perduodami su aiškiu įspėjimu.
+   */
+  verified: boolean;
+  note: string | null;
+}
+
 export interface PlayoffLine {
   gamesPlayed: number;
   minutesPerGame: number;
@@ -108,6 +149,8 @@ export interface Player {
   /** Pernykštis Modern FP iš tikros statistikos — rikiavimo atspirties taškas. */
   lastSeasonModernFP?: number | null;
   lastSeason?: SeasonLine | null;
+  /** Kitos lygos statistika tiems, kas pernai nežaidė EL/EC. */
+  lastSeasonOther?: OtherLeagueLine | null;
   playoffs?: PlayoffLine | null;
   competition?: CompetitionBlock;
   evaluation?: Evaluation | null;

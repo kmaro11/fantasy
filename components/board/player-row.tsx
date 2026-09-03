@@ -23,7 +23,9 @@ const STATUS_CLASS: Record<Status, string> = {
 
 export function PlayerRow({ player, taken }: { player: Player; taken: Pick | undefined }) {
   const { select, take } = useDraft();
-  const noData = player.lastLeague === "-";
+  const other = player.lastSeasonOther ?? null;
+  // „Nėra duomenų" lieka tik tada, kai nėra NEI Eurolygos, NEI kitos lygos.
+  const noData = player.lastLeague === "-" && !other;
 
   return (
     <div
@@ -52,17 +54,32 @@ export function PlayerRow({ player, taken }: { player: Player; taken: Pick | und
 
       <div className="font-mono text-[11px] text-fg-muted">{player.pos}</div>
       <div className="truncate text-[12px] text-fg-soft">{player.team}</div>
-      <div className="truncate text-[12px] text-fg-muted">
+      <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-fg-muted">
         {noData ? (
           <span className="rounded-[2px] border border-warn-line bg-warn-bg px-[5px] py-0.5 font-mono text-[10px] text-warn-fg">
             nėra duomenų
           </span>
+        ) : other ? (
+          <>
+            {/* Kita lyga pažymima atskirai — jos skaičiai su Eurolygos nepalyginami. */}
+            <span
+              className="flex-none rounded-[2px] border border-chip-line bg-chip px-[5px] py-0.5 font-mono text-[10px] text-fg-soft"
+              title={`${other.league} ${other.season}${other.verified ? "" : " — apytiksliai duomenys"}`}
+            >
+              {other.league}
+              {other.verified ? "" : "?"}
+            </span>
+            <span className="truncate">{other.club}</span>
+          </>
         ) : (
-          lastSeasonLine(player)
+          <span className="truncate">{lastSeasonLine(player)}</span>
         )}
       </div>
-      <div className="text-right font-mono text-[12px] text-fg-soft">
-        {noData ? "—" : player.min.toFixed(1)}
+      <div
+        className={`text-right font-mono text-[12px] ${other ? "text-fg-dim" : "text-fg-soft"}`}
+        title={other ? "Kitos lygos minutės — su Eurolygos tiesiogiai nepalyginamos" : undefined}
+      >
+        {noData || player.min === 0 ? "—" : player.min.toFixed(1)}
       </div>
       <div className="text-right font-medium font-mono text-[13px] text-fg-strong">
         {noData && !player.evaluation ? "—" : player.fp.toFixed(1)}

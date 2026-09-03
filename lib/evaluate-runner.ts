@@ -41,6 +41,32 @@ export function needsAi(player: Player): boolean {
   return false;
 }
 
+/**
+ * NCAA žaidėjai nevertinami. Studentų lygos skaičiai Eurolygai nieko nesako —
+ * nei tempas, nei gynybos lygis, nei vaidmuo neperkeliami, o tai beveik visada
+ * jauni debiutantai be jokios profesionalios imties. Jiems tiesiog paliekama
+ * žyma, o pakopa — 3 („neaiškus atvejis"), ne 4.
+ */
+export function isNcaa(player: Player): boolean {
+  return player.lastSeasonOther?.league === "NCAA";
+}
+
+export function ncaaEvaluation(player: Player): Evaluation {
+  const o = player.lastSeasonOther;
+  return {
+    tier: "Have potential",
+    projectedFP: 0,
+    projectedMinutes: 0,
+    confidence: "low",
+    reasoning: `Pernai žaidė NCAA${o?.club ? ` (${o.club})` : ""} — jaunas žaidėjas be profesionalios Europos imties. Nevertinama: studentų lygos statistika Eurolygai nepalyginama.`,
+    riskFlags: ["nauja_lyga", "nestabilus_vaidmuo"],
+    availability: player.status === "ready" ? null : `Būklė: ${player.status}.`,
+    upside: null,
+    source: "auto",
+    evaluatedAt: new Date().toISOString(),
+  };
+}
+
 export function autoEvaluation(player: Player): Evaluation {
   const fp = player.lastSeasonModernFP ?? 0;
   return {
@@ -153,6 +179,20 @@ export async function runEvaluation(options: RunOptions): Promise<RunSummary> {
 
     if (!sourceId || existing[sourceId]) {
       summary.skipped++;
+      onProgress?.({
+        done,
+        total: players.length,
+        current: player.name,
+        failed: summary.failed.length,
+        skipped: summary.skipped,
+      });
+      continue;
+    }
+
+    // NCAA — niekada nesiunčiam AI, net kai prašoma vertinti visus.
+    if (isNcaa(player)) {
+      onResult(sourceId, ncaaEvaluation(player));
+      summary.auto++;
       onProgress?.({
         done,
         total: players.length,

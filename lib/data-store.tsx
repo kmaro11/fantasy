@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { fetchAllStats } from "./euroleague";
@@ -15,7 +16,7 @@ import { PLAYERS as DEMO_PLAYERS } from "./players";
 import { parseRoster, type RosterPlayer, type RosterSource } from "./roster";
 import * as storage from "./storage";
 import { TIER_FROM_LABEL } from "./tiers";
-import type { Evaluation, Player } from "./types";
+import type { Evaluation, OtherLeagueLine, Player } from "./types";
 
 export type LoadPhase = "idle" | "roster" | "stats" | "merging" | "done" | "error";
 
@@ -51,6 +52,8 @@ interface StoredDataset {
   meta: DataMeta;
 }
 
+const EMPTY_META: DataMeta = { fetchedAt: null, matchedCount: 0, total: 0, kind: "demo" };
+
 const DEMO_META: DataMeta = {
   fetchedAt: null,
   matchedCount: 0,
@@ -75,11 +78,18 @@ function applyEvaluations(players: Player[], evaluations: Record<string, Evaluat
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  /**
+   * Startuojam TUŠČIU sąrašu, o ne demo duomenimis. Mockup'o žaidėjai lentoje
+   * atrodo kaip tikri, ir vidury drafto pagal juos galima nusirinkti ne tą
+   * žmogų. Geriau trumpai tuščia lenta, nei greitai — melaginga.
+   */
   const [dataset, setDataset] = useState<StoredDataset>({
-    players: DEMO_PLAYERS,
+    players: [],
     unmatched: [],
-    meta: DEMO_META,
+    meta: EMPTY_META,
   });
+  const [restored, setRestored] = useState(false);
+  const bootstrapped = useRef(false);
   const [pairings, setPairings] = useState<Record<string, string>>({});
   const [evaluations, setEvaluations] = useState<Record<string, Evaluation>>({});
   const [phase, setPhase] = useState<LoadPhase>("idle");
@@ -91,6 +101,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (stored?.players?.length) setDataset(stored);
     setPairings(storage.loadPairings());
     setEvaluations(storage.loadEvaluations());
+    setRestored(true);
   }, []);
 
   const runMerge = useCallback(async (roster: RosterPlayer[], manual: Record<string, string>) => {
@@ -134,10 +145,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
         setPhase("error");
+        // Nepavykus — bent demo sąrašas, kad sąsaja būtų naudojama.
+        setDataset((prev) =>
+          prev.players.length ? prev : { players: DEMO_PLAYERS, unmatched: [], meta: DEMO_META },
+        );
       }
     },
     [pairings, runMerge],
   );
+
+  /**
+   * Pirmą kartą atidarius duomenys užsikrauna patys — mygtuko spausti nereikia.
+   * Jei `localStorage` jau turi tikrą importą, jis naudojamas ir tinklo
+   * neliečiam. Nepavykus (nėra players.json, nėra interneto) krentam į demo
+   * sąrašą, kad sąsaja neliktų tuščia.
+   */
+  useEffect(() => {
+    if (!restored || bootstrapped.current) return;
+    bootstrapped.current = true;
+    if (dataset.meta.kind === "real") return;
+
+    void refresh().catch(() => {
+      setDataset({ players: DEMO_PLAYERS, unmatched: [], meta: DEMO_META });
+    });
+  }, [restored, dataset.meta.kind, refresh]);
 
   const pair = useCallback((sourceId: string, apiName: string) => {
     setPairings((prev) => {
