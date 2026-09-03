@@ -1,10 +1,93 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+@theme inline {
+  --font-sans: var(--font-barlow), "Helvetica Neue", Helvetica, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-html {
-  font-family: var(--font-sans);
+@theme {
+  /* paviršiai */
+  --color-base: #0a0c0d;
+  --color-surface: #0d1012;
+  --color-panel: #0e1113;
+  --color-bar: #101315;
+  --color-head: #121618;
+  --color-cell: #131718;
+  --color-control: #15191b;
+  --color-control-hover: #22282c;
+  --color-row-hover: #181d20;
+  --color-row-taken: #0e1011;
+  --color-row-out: #0c0e0f;
+  --color-tab-active: #161b1e;
+  --color-comp-head: #181c1f;
+  --color-comp-row: #161c1f;
+  --color-track: #1a1e21;
+
+  /* linijos */
+  --color-line: #1e2326;
+  --color-line-strong: #2b3135;
+  --color-line-soft: #16191b;
+  --color-line-row: #14181a;
+  --color-line-head: #23292d;
+  --color-control-line: #2f353a;
+
+  /* filtrų žymos */
+  --color-chip: #14181a;
+  --color-chip-line: #262c30;
+  --color-chip-on: #232a2e;
+  --color-chip-on-line: #3f484d;
+
+  /* tekstas */
+  --color-fg: #d7dbde;
+  --color-fg-bright: #eef1f3;
+  --color-fg-strong: #e6eaed;
+  --color-fg-mild: #c2c8cd;
+  --color-fg-soft: #b3babf;
+  --color-fg-muted: #8a9298;
+  --color-fg-dim: #6d757b;
+  --color-fg-faint: #5c6469;
+  --color-fg-ghost: #4e5559;
+  --color-fg-label: #7b8388;
+  --color-fg-value: #cfd4d8;
+
+  /* pakopos */
+  --color-tier-1: #3fbf6a;
+  --color-tier-2: #4b8fd6;
+  --color-tier-3: #d8b23c;
+  --color-tier-4: #c1483f;
+  --color-tier-empty: #1c2124;
+
+  /* akcentas */
+  --color-accent: #3fbf6a;
+  --color-accent-hover: #54d47f;
+  --color-accent-line: #2c6b43;
+
+  /* atspalviai (statusai, pasitikėjimas) */
+  --color-tint-red: #241413;
+  --color-tint-amber: #241f0f;
+  --color-tint-green: #0f2016;
+  --color-tint-neutral: #171b1d;
+  --color-status-ready: #6f7a80;
+
+  /* įspėjimai */
+  --color-warn-line: #6a4a20;
+  --color-warn-bg: #1c1509;
+  --color-warn-fg: #e0c48a;
+  --color-danger-line: #7a3030;
+  --color-danger-bg: #1e0f10;
+  --color-danger-fg: #f0a9a9;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2f33;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #101315;
 }

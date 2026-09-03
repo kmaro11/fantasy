@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Draft Assist
 
-## Getting Started
+Eurolygos fantasy draft'o pagalbininkas. Next.js 16 (App Router), TypeScript, Tailwind v4, Biome.
 
-First, run the development server:
+Sukurta pagal `Draft board mockup paruoštas/Draft Assist.dc.html` dizainą — visas mockup'o
+`sc-for` / `sc-if` šablonas perrašytas React komponentais, spalvos perkeltos į Tailwind temos
+tokenus, o logika (filtrai, rūšiavimas, undo) — į `useReducer` būseną.
+
+## Paleidimas
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm dev        # http://localhost:3000
+pnpm build      # produkcinis build
+pnpm lint       # biome check .
+pnpm format     # biome check --write .
+pnpm typecheck  # tsc --noEmit
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Struktūra
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/
+  layout.tsx            šriftai, DraftProvider, viršutinė juosta
+  page.tsx              draft board (lentelė + panelė + sudėtis)
+  nustatymai/page.tsx   duomenys, lygos nustatymai, vardų suporavimas, AI vertinimas
+  globals.css           Tailwind tema — dizaino paletė kaip tokenai
+components/
+  top-bar.tsx           logotipas, tab'ai, LAISVI / PAIMTI / MANO SUDĖTIS, UNDO
+  board/                filter-bar, player-table, player-row, detail-panel, roster-sidebar
+  settings/card.tsx     nustatymų kortelės karkasas
+lib/
+  types.ts              Player, Pick, Filters, Tier ir kt.
+  players.ts            žaidėjų duomenys (96 įrašai iš mockup'o)
+  draft-store.tsx       React context + reducer: take / undo / select / filtrai / rūšiavimas
+  selectors.ts          matomos eilutės, paimtų žemėlapis, sudėties poreikiai
+  analysis.ts           statistika, konkurencija, AI pagrindimas, pasitikėjimas
+  config.ts             sudėties dydis, lentelės stulpeliai, demo seed'o jungiklis
+  settings-data.ts      statiniai nustatymų duomenys (nesuporuoti vardai, laiko žymos)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Kas skiriasi nuo mockup'o
 
-## Learn More
+- **Skaičiai tikri.** Mockup'as hardcode'ino „204 žaidėjai" ir netikrus pakopų kiekius; čia viskas
+  skaičiuojama iš `PLAYERS` (96 įrašai).
+- **Du maršrutai** vietoj vieno komponento su `view` būsena: `/` ir `/nustatymai`. Draft'o būsena
+  gyvena `DraftProvider` layout'e, todėl perjungiant tab'us nedingsta.
+- **Demo draft'as.** `lib/config.ts` → `SEED_PICKS = false` startuoja nuo tuščios lentos.
+- **Tankis** (`density` prop mockup'e) fiksuotas ties `compact`.
 
-To learn more about Next.js, take a look at the following resources:
+## Kas dar nepajungta
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`players.json` įkėlimas, „Atnaujinti duomenis", „Suporuoti" ir „Paleisti vertinimą" nustatymų
+puslapyje yra UI be logikos — kaip ir mockup'e. Statistika `lib/analysis.ts` išvedama iš FP/G;
+atsiradus tikram duomenų šaltiniui keičiama ten vienoje vietoje.

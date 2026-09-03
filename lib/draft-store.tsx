@@ -1,0 +1,84 @@
+"use client";
+
+import { createContext, type ReactNode, useContext, useMemo, useReducer } from "react";
+import { seedHistory } from "./seed";
+import type { Filters, Pick, SortDir, SortKey } from "./types";
+
+interface DraftState {
+  history: Pick[];
+  selectedId: number | null;
+  filters: Filters;
+  sortKey: SortKey;
+  sortDir: SortDir;
+}
+
+type Action =
+  | { type: "take"; playerId: number; mine: boolean }
+  | { type: "undo" }
+  | { type: "select"; playerId: number | null }
+  | { type: "filter"; patch: Partial<Filters> }
+  | { type: "sort"; key: SortKey };
+
+const INITIAL: DraftState = {
+  history: seedHistory(),
+  selectedId: 4,
+  filters: { query: "", pos: "ALL", tier: "ALL", league: "ALL", team: "ALL", showTaken: false },
+  sortKey: "fp",
+  sortDir: -1,
+};
+
+function reducer(state: DraftState, action: Action): DraftState {
+  switch (action.type) {
+    case "take":
+      return {
+        ...state,
+        history: [...state.history, { playerId: action.playerId, mine: action.mine }],
+      };
+    case "undo":
+      return state.history.length ? { ...state, history: state.history.slice(0, -1) } : state;
+    case "select":
+      return { ...state, selectedId: action.playerId };
+    case "filter":
+      return { ...state, filters: { ...state.filters, ...action.patch } };
+    case "sort":
+      return {
+        ...state,
+        sortKey: action.key,
+        sortDir: state.sortKey === action.key ? ((state.sortDir * -1) as SortDir) : -1,
+      };
+  }
+}
+
+interface DraftContextValue extends DraftState {
+  take: (playerId: number, mine: boolean) => void;
+  undo: () => void;
+  select: (playerId: number | null) => void;
+  setFilter: (patch: Partial<Filters>) => void;
+  toggleSort: (key: SortKey) => void;
+}
+
+const DraftContext = createContext<DraftContextValue | null>(null);
+
+export function DraftProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, INITIAL);
+
+  const value = useMemo<DraftContextValue>(
+    () => ({
+      ...state,
+      take: (playerId, mine) => dispatch({ type: "take", playerId, mine }),
+      undo: () => dispatch({ type: "undo" }),
+      select: (playerId) => dispatch({ type: "select", playerId }),
+      setFilter: (patch) => dispatch({ type: "filter", patch }),
+      toggleSort: (key) => dispatch({ type: "sort", key }),
+    }),
+    [state],
+  );
+
+  return <DraftContext.Provider value={value}>{children}</DraftContext.Provider>;
+}
+
+export function useDraft(): DraftContextValue {
+  const value = useContext(DraftContext);
+  if (!value) throw new Error("useDraft turi būti naudojamas DraftProvider viduje");
+  return value;
+}
