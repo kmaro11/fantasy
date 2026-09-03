@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROSTER_SIZE } from "@/lib/config";
+import { useData } from "@/lib/data-store";
 import { useDraft } from "@/lib/draft-store";
-import { PLAYERS } from "@/lib/players";
 import { myRoster } from "@/lib/selectors";
 
 const TABS = [
@@ -31,10 +31,10 @@ function Metric({
 
 export function TopBar() {
   const pathname = usePathname();
-  const { history, undo } = useDraft();
-  const roster = myRoster(history);
+  const { history, undo, canUndo } = useDraft();
+  const { players } = useData();
+  const roster = myRoster(history, players);
   const full = roster.length >= ROSTER_SIZE;
-  const canUndo = history.length > 0;
 
   return (
     <header className="flex flex-none items-stretch border-line border-b bg-bar">
@@ -67,7 +67,7 @@ export function TopBar() {
       <div className="flex items-center gap-[22px] border-line border-l py-2 pr-3.5 pl-5">
         <Metric
           label="LAISVI"
-          value={String(PLAYERS.length - history.length)}
+          value={String(players.length - history.length)}
           className="text-fg-value"
         />
         <Metric label="PAIMTI" value={String(history.length)} className="text-fg-muted" />

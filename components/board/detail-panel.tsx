@@ -11,8 +11,9 @@ import {
   projectedMinutes,
   seasonStats,
 } from "@/lib/analysis";
+import { useData } from "@/lib/data-store";
 import { useDraft } from "@/lib/draft-store";
-import { LEAGUE_LABEL, PLAYERS } from "@/lib/players";
+import { LEAGUE_LABEL } from "@/lib/players";
 import { takenMap } from "@/lib/selectors";
 import { TIER_BG, TIER_LABEL } from "@/lib/tiers";
 
@@ -24,15 +25,17 @@ function SectionLabel({ children }: { children: string }) {
 
 export function DetailPanel() {
   const { selectedId, select, history, take } = useDraft();
+  const { players } = useData();
   if (selectedId === null) return null;
 
-  const player = PLAYERS[selectedId];
+  const player = players.find((p) => p.id === selectedId);
   if (!player) return null;
 
   const taken = takenMap(history).get(player.id);
   const noData = player.lastLeague === "-";
-  const comp = competition(player, PLAYERS);
+  const comp = competition(player, players);
   const conf = confidence(player);
+  const evaluation = player.evaluation;
 
   const state = taken ? (taken.mine ? "mano sudėtyje" : "paimtas") : "laisvas";
 
@@ -87,6 +90,18 @@ export function DetailPanel() {
             { k: "Lyga", v: LEAGUE_LABEL[player.lastLeague] },
             { k: "Rungtynės", v: player.gp ? String(player.gp) : "—" },
             { k: "Vid. minutės", v: noData ? "—" : player.min.toFixed(1) },
+            ...(player.playoffs
+              ? [
+                  {
+                    k: "Atkrintamosios",
+                    v: `${player.playoffs.minutesPerGame.toFixed(1)} min · ${player.playoffs.gamesPlayed} rungt.`,
+                  },
+                  {
+                    k: "Vaidmuo PO",
+                    v: `${player.playoffs.minutesPerGame - player.min >= 0 ? "+" : ""}${(player.playoffs.minutesPerGame - player.min).toFixed(1)} min`,
+                  },
+                ]
+              : []),
           ].map((o) => (
             <div key={o.k} className="flex justify-between gap-2 bg-cell px-2 py-[7px]">
               <div className="text-[11px] text-fg-label">{o.k}</div>
@@ -148,6 +163,33 @@ export function DetailPanel() {
         </div>
         <p className="text-pretty text-[13px] text-fg-mild leading-[1.5]">{aiSummary(player)}</p>
 
+        {evaluation?.riskFlags?.length ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {evaluation.riskFlags.map((flag) => (
+              <span
+                key={flag}
+                className="rounded-[2px] border border-warn-line bg-warn-bg px-1.5 py-0.5 font-mono text-[10px] text-warn-fg"
+              >
+                {flag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {evaluation?.availability ? (
+          <div className="mt-2 rounded-[3px] border border-line-strong bg-cell px-2 py-1.5 text-[11px] text-fg-mild leading-[1.4]">
+            <span className="text-fg-dim">Būklė: </span>
+            {evaluation.availability}
+          </div>
+        ) : null}
+
+        {evaluation?.upside ? (
+          <div className="mt-1.5 text-[11px] text-fg-label leading-[1.4]">
+            <span className="text-fg-dim">Kas gali viršyti prognozę: </span>
+            {evaluation.upside}
+          </div>
+        ) : null}
+
         <div className="mt-2.5 flex gap-4 border-line border-t pt-2.5">
           <div>
             <div className="text-[9px] text-fg-dim tracking-[0.08em]">PROGN. MINUTĖS</div>
@@ -156,6 +198,20 @@ export function DetailPanel() {
           <div>
             <div className="text-[9px] text-fg-dim tracking-[0.08em]">PROGN. FP/G</div>
             <div className="font-mono text-[15px] text-fg-strong">{player.fp.toFixed(1)}</div>
+          </div>
+          {player.lastSeasonModernFP != null && (
+            <div>
+              <div className="text-[9px] text-fg-dim tracking-[0.08em]">PERNAI FP/G</div>
+              <div className="font-mono text-[15px] text-fg-value">
+                {player.lastSeasonModernFP.toFixed(1)}
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="text-[9px] text-fg-dim tracking-[0.08em]">ŠALTINIS</div>
+            <div className="font-mono text-[15px] text-fg-value">
+              {evaluation ? (evaluation.source === "ai" ? "AI" : "auto") : "—"}
+            </div>
           </div>
         </div>
 

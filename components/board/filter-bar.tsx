@@ -1,7 +1,7 @@
 "use client";
 
+import { useData } from "@/lib/data-store";
 import { useDraft } from "@/lib/draft-store";
-import { TEAMS } from "@/lib/players";
 import { TIER_BG, TIER_LABEL, TIERS } from "@/lib/tiers";
 import type { League, Position, Tier } from "@/lib/types";
 
@@ -28,6 +28,7 @@ const LEAGUES: [League | "ALL", string][] = [
 
 export function FilterBar({ shown, total }: { shown: number; total: number }) {
   const { filters, setFilter } = useDraft();
+  const { teams } = useData();
 
   return (
     <div className="flex flex-none flex-wrap items-center gap-x-3.5 gap-y-1.5 border-line border-b bg-surface px-3 py-2">
@@ -92,7 +93,7 @@ export function FilterBar({ shown, total }: { shown: number; total: number }) {
         className="rounded-[3px] border border-line-strong bg-control px-1.5 py-[5px] text-[12px] text-fg-value outline-none"
       >
         <option value="ALL">Visos komandos</option>
-        {TEAMS.map((team) => (
+        {teams.map((team) => (
           <option key={team} value={team}>
             {team}
           </option>

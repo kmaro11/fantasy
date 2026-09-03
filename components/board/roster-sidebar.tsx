@@ -1,19 +1,23 @@
 "use client";
 
 import { ROSTER_SIZE } from "@/lib/config";
+import { useData } from "@/lib/data-store";
 import { useDraft } from "@/lib/draft-store";
-import { PLAYERS } from "@/lib/players";
 import { myRoster, rosterNeeds } from "@/lib/selectors";
+import { snakeInfo } from "@/lib/snake";
 import { TIER_BG } from "@/lib/tiers";
 import type { Position } from "@/lib/types";
 
 const POSITIONS: Position[] = ["G", "F", "C"];
 
 export function RosterSidebar() {
-  const { history } = useDraft();
-  const roster = myRoster(history);
+  const { history, settings } = useDraft();
+  const { players } = useData();
+  const roster = myRoster(history, players);
   const needs = rosterNeeds(roster);
   const totalFp = roster.reduce((a, p) => a + p.fp, 0);
+  const snake = snakeInfo(settings.myPickSlot, settings.teamCount, ROSTER_SIZE, history.length);
+  const myTurn = snake.untilNext === 0;
 
   const slots = Array.from({ length: ROSTER_SIZE }, (_, i) => roster[i]);
   const recent = [...history].reverse().slice(0, 7);
@@ -31,6 +35,48 @@ export function RosterSidebar() {
           <div className="font-bold font-mono text-[22px] text-fg-strong">{totalFp.toFixed(1)}</div>
           <div className="text-[11px] text-fg-label">prognozuojami FP / rungtynės</div>
         </div>
+      </div>
+
+      <div
+        className={`border-line border-b px-3 py-2 ${myTurn ? "bg-tint-green" : ""}`}
+        title="Snake eiliškumas: 1→8, 8→1, 1→8…"
+      >
+        <div className="flex items-baseline justify-between">
+          <div className="text-[10px] text-fg-label tracking-[0.12em]">
+            SNAKE · #{settings.myPickSlot} iš {settings.teamCount}
+          </div>
+          <div className="font-mono text-[11px] text-fg-dim">
+            {snake.currentRound} raundas · {history.length}/{snake.totalPicks}
+          </div>
+        </div>
+
+        <div className="mt-1 flex items-baseline gap-2">
+          {snake.nextPick === null ? (
+            <div className="text-[12px] text-fg-muted">Pikų nebeliko.</div>
+          ) : myTurn ? (
+            <>
+              <div className="font-bold font-mono text-[20px] text-tier-1 leading-none">
+                TAVO EILĖ
+              </div>
+              <div className="text-[11px] text-fg-label">pikas #{snake.nextPick}</div>
+            </>
+          ) : (
+            <>
+              <div className="font-bold font-mono text-[20px] text-fg-strong leading-none">
+                {snake.untilNext}
+              </div>
+              <div className="text-[11px] text-fg-label">
+                {snake.untilNext === 1 ? "pikas" : "pikai"} iki #{snake.nextPick}
+              </div>
+            </>
+          )}
+        </div>
+
+        {snake.gapAfterNext !== null && (
+          <div className="mt-0.5 text-[10px] text-fg-dim">
+            po jo laukti dar {snake.gapAfterNext} — imk du, kurių neatsiimsi vėliau
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-px border-line border-b bg-line">
@@ -91,7 +137,7 @@ export function RosterSidebar() {
           PASKUTINIAI PAŽYMĖTI
         </div>
         {recent.map((pick, i) => {
-          const player = PLAYERS[pick.playerId];
+          const player = players.find((p) => p.id === pick.playerId);
           if (!player) return null;
           return (
             <div

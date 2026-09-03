@@ -16,3 +16,11 @@ export const TIER_BG: Record<Tier, string> = {
 };
 
 export const TIERS: Tier[] = [1, 2, 3, 4];
+
+/** AI grąžina pakopą tekstu — sąsaja dirba su skaičiumi. */
+export const TIER_FROM_LABEL: Record<string, Tier> = {
+  "PICK!": 1,
+  "Worth to pick": 2,
+  "Have potential": 3,
+  "DO NOT PICK!": 4,
+};

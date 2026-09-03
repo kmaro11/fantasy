@@ -6,20 +6,29 @@ import { useDraft } from "@/lib/draft-store";
 import { TIER_BG } from "@/lib/tiers";
 import type { Pick, Player, Status } from "@/lib/types";
 
+/**
+ * Būklė rodoma NEUTRALIAI — spalva informuoja, bet neteisia.
+ * Sąmoningai nėra prislopinimo ar nustūmimo žemyn: draftas yra visam sezonui,
+ * ir elitinis žaidėjas, praleisiantis mėnesį, dažnai vis tiek vertas ankstyvo
+ * piko. Sąsaja pasako faktą, sprendimą priima naudotojas.
+ */
 const STATUS_CLASS: Record<Status, string> = {
   out: "text-tier-4 bg-tint-red",
+  uncertain: "text-tier-3 bg-tint-amber",
   doubtful: "text-tier-3 bg-tint-amber",
+  questionable: "text-tier-3 bg-tint-amber",
+  expected: "text-status-ready bg-tint-neutral",
   ready: "text-status-ready bg-tint-neutral",
 };
 
 export function PlayerRow({ player, taken }: { player: Player; taken: Pick | undefined }) {
   const { select, take } = useDraft();
-  const isOut = player.status === "out";
+  const noData = player.lastLeague === "-";
 
   return (
     <div
       className={`grid ${BOARD_GRID} h-7 items-center border-line-soft border-b px-3 hover:bg-row-hover ${
-        taken ? "bg-row-taken opacity-40" : isOut ? "bg-row-out opacity-55" : ""
+        taken ? "bg-row-taken opacity-40" : ""
       }`}
     >
       <div className={`h-5 w-1.5 rounded-[1px] ${TIER_BG[player.tier]}`} />
@@ -44,13 +53,19 @@ export function PlayerRow({ player, taken }: { player: Player; taken: Pick | und
       <div className="font-mono text-[11px] text-fg-muted">{player.pos}</div>
       <div className="truncate text-[12px] text-fg-soft">{player.team}</div>
       <div className="truncate text-[12px] text-fg-muted">
-        {player.lastLeague === "-" ? "— nėra duomenų" : lastSeasonLine(player)}
+        {noData ? (
+          <span className="rounded-[2px] border border-warn-line bg-warn-bg px-[5px] py-0.5 font-mono text-[10px] text-warn-fg">
+            nėra duomenų
+          </span>
+        ) : (
+          lastSeasonLine(player)
+        )}
       </div>
       <div className="text-right font-mono text-[12px] text-fg-soft">
-        {player.lastLeague === "-" ? "—" : player.min.toFixed(1)}
+        {noData ? "—" : player.min.toFixed(1)}
       </div>
       <div className="text-right font-medium font-mono text-[13px] text-fg-strong">
-        {player.fp.toFixed(1)}
+        {noData && !player.evaluation ? "—" : player.fp.toFixed(1)}
       </div>
       <div className="text-center">
         <span

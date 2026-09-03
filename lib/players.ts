@@ -1,3 +1,8 @@
+/**
+ * Demo duomenys iš mockup'o — rodomi tik tol, kol nepaleistas tikras importas
+ * („Atnaujinti duomenis" nustatymuose). Tikri žaidėjai ateina iš `merge.ts`.
+ */
+
 import type { League, Player, Position, Status, Tier } from "./types";
 
 /** [vardas, poz, komanda, pernykštė komanda, pernykštė lyga, min, fp, būklė, pakopa] */
@@ -124,9 +129,3 @@ export const PLAYERS: Player[] = RAW.map(
     gp: lastLeague === "-" ? 0 : 22 + ((i * 3) % 12),
   }),
 );
-
-export const TEAMS: string[] = [...new Set(PLAYERS.map((p) => p.team))].sort();
-
-export function playerById(id: number): Player | undefined {
-  return PLAYERS[id];
-}

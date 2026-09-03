@@ -1,29 +1,32 @@
 import { LEAGUE_LABEL } from "./players";
-import type { Player } from "./types";
+import type { CompetitionRival, Player } from "./types";
 
 export interface StatCell {
   k: string;
   v: string;
 }
 
-/**
- * Pernykštė statistika, išvesta iš FP/G. Kai atsiras tikras players.json,
- * ši funkcija keičiama tiesioginiu duomenų skaitymu.
- */
+/** Pernykštė statistika iš tikros Eurolygos/EuroCup eilutės. */
 export function seasonStats(p: Player): StatCell[] {
-  const f = p.fp;
-  const s = 1 + (p.id % 5) * 0.03;
+  const s = p.lastSeason;
+  if (!s) return [];
+
+  const fga = s.fg2a + s.fg3a;
+  const fgm = s.fg2m + s.fg3m;
+  const fgPct = fga > 0 ? `${Math.round((fgm / fga) * 100)}%` : "—";
+
   return [
-    { k: "TŠK", v: (f * 0.6 * s).toFixed(1) },
-    { k: "PUOL.ATK", v: (f * 0.07).toFixed(1) },
-    { k: "GYN.ATK", v: (f * 0.16).toFixed(1) },
-    { k: "REZ.PERD", v: (f * (p.pos === "G" ? 0.2 : 0.09)).toFixed(1) },
-    { k: "PERIMTI", v: (f * 0.05).toFixed(1) },
-    { k: "BLOKAI", v: (f * (p.pos === "C" ? 0.06 : 0.02)).toFixed(1) },
-    { k: "KLAIDOS", v: (f * 0.1).toFixed(1) },
-    { k: "MET %", v: `${44 + ((p.id * 7) % 15)}%` },
-    { k: "IŠPROV.PR", v: (f * 0.12).toFixed(1) },
-    { k: "DVIG.DUBL", v: String(Math.max(0, Math.round(f / 7 - 1))) },
+    { k: "TŠK", v: s.points.toFixed(1) },
+    { k: "PUOL.ATK", v: s.oreb.toFixed(1) },
+    { k: "GYN.ATK", v: s.dreb.toFixed(1) },
+    { k: "REZ.PERD", v: s.assists.toFixed(1) },
+    { k: "PERIMTI", v: s.steals.toFixed(1) },
+    { k: "BLOKAI", v: s.blocks.toFixed(1) },
+    { k: "KLAIDOS", v: s.turnovers.toFixed(1) },
+    { k: "MET %", v: fgPct },
+    { k: "IŠPROV.PR", v: s.foulsDrawn.toFixed(1) },
+    // Sezono suma, o ne dalis — taip skaitomiau nei „0.16".
+    { k: "DVIG.DUBL", v: String(Math.round(s.doubleDoubles * s.gamesPlayed)) },
   ];
 }
 
@@ -36,47 +39,73 @@ export interface CompetitionRow {
   highlight: boolean;
 }
 
-/** Tos pačios komandos ir pozicijos žaidėjai — kas atims minutes. */
-export function competition(p: Player, players: Player[]): CompetitionRow[] {
-  const rivals = players
-    .filter((x) => x.team === p.team && x.pos === p.pos && x.id !== p.id)
-    .sort((a, b) => b.min - a.min)
-    .slice(0, 4)
-    .map((x) => ({
-      name: x.name,
-      min: x.lastLeague === "-" ? "—" : x.min.toFixed(1),
-      pts: (x.fp * 0.6).toFixed(1),
-      fp: x.fp.toFixed(1),
-      gp: x.gp ? String(x.gp) : "—",
-      highlight: false,
-    }));
+const dash = (value: number, digits = 1) => (value > 0 ? value.toFixed(digits) : "—");
 
-  const noData = p.lastLeague === "-";
+/**
+ * Konkurentų lentelė. Eilutes paruošia `merge.ts` (`player.competition`) —
+ * čia tik formatavimas. Demo duomenims paliktas atsarginis kelias.
+ */
+export function competition(p: Player, players: Player[]): CompetitionRow[] {
+  const rivals: CompetitionRival[] =
+    p.competition?.rivals ??
+    players
+      .filter((x) => x.team === p.team && x.pos === p.pos && x.id !== p.id)
+      .map((x) => ({
+        name: x.name,
+        league: x.lastLeague,
+        mpg: x.min,
+        points: 0,
+        rebounds: 0,
+        assists: 0,
+        modernFP: x.fp,
+        health: x.status,
+      }));
+
+  const rows = rivals.slice(0, 5).map((r) => ({
+    name: r.name,
+    min: dash(r.mpg),
+    pts: dash(r.points),
+    fp: dash(r.modernFP),
+    gp: r.league === "-" ? "—" : "",
+    highlight: false,
+  }));
+
   return [
     {
       name: `${p.name} (vertinamas)`,
-      min: noData ? "—" : p.min.toFixed(1),
-      pts: noData ? "—" : (p.fp * 0.6).toFixed(1),
-      fp: p.fp.toFixed(1),
+      min: dash(p.min),
+      pts: dash(p.lastSeason?.points ?? 0),
+      fp: dash(p.fp),
       gp: p.gp ? String(p.gp) : "—",
       highlight: true,
     },
-    ...rivals,
+    ...rows,
   ];
 }
 
 export function competitionNote(p: Player, rows: CompetitionRow[]): string {
   const rivals = rows.length - 1;
-  return rivals > 0
-    ? `Toje pačioje pozicijoje ${p.team} turi ${rivals} konkurentą(-us). Prognozuojamos minutės atsižvelgia į jų pernykštį krūvį.`
-    : "Aiškių konkurentų pozicijoje nėra — minutės turėtų būti stabilios.";
+  const composition = p.competition?.rosterComposition;
+  const bigMan = p.pos !== "G";
+
+  if (rivals === 0) return "Aiškių konkurentų pozicijoje nėra — minutės turėtų būti stabilios.";
+
+  const pool = bigMan
+    ? "Aukštaūgiams skaičiuojami ir puolėjai, ir centrai — jie dalijasi tomis pačiomis minutėmis."
+    : "";
+  const size = composition ? ` Sudėtyje ${composition.total} žaidėjai.` : "";
+
+  return `Toje pačioje pozicijoje ${p.team} turi ${rivals} konkurentą(-us). ${pool}${size}`;
 }
 
 export type Confidence = "high" | "medium" | "low";
 
 export function confidence(p: Player): Confidence {
-  if (p.lastLeague === "-") return "low";
-  return p.tier <= 2 ? "high" : "medium";
+  if (p.evaluation) return p.evaluation.confidence;
+  if (!p.lastSeason) return "low";
+  // Maža imtis vidurkius daro triukšmingus — 10 rungtynių dar ne vaidmuo.
+  if (p.gp < 10) return "low";
+  return p.gp >= 25 ? "high" : "medium";
 }
 
 export const CONFIDENCE_LABEL: Record<Confidence, string> = {
@@ -91,32 +120,28 @@ export const CONFIDENCE_CLASS: Record<Confidence, string> = {
   low: "text-tier-4 bg-tint-red",
 };
 
+/** AI pagrindimas, jei yra. Kitu atveju — sąžininga santrauka iš skaičių. */
 export function aiSummary(p: Player): string {
-  if (p.lastLeague === "-") {
-    return `${p.name} pernai nežaidė nei Eurolygoje, nei EuroCupe, todėl lyginamų duomenų nėra. Rolė ${p.team} komandoje kol kas rotacinė, o priekyje jo pozicijoje yra bent du patyrę žaidėjai. Imti verta tik vėlyvuose raunduose kaip atsargą.`;
+  if (p.evaluation) return p.evaluation.reasoning;
+
+  if (!p.lastSeason) {
+    return `${p.name} pernai nežaidė nei Eurolygoje, nei EuroCupe, todėl lyginamų duomenų nėra. Vertinimas galimas tik iš konteksto — kol nepaleistas AI vertinimas, pakopa yra sąlyginė.`;
   }
 
-  const context =
-    p.status === "doubtful"
-      ? "Sezono starte kyla klausimų dėl fizinės būklės, todėl pirmose rungtynėse minutės gali būti ribojamos. "
-      : `Konkurencija jo pozicijoje ${p.team} sudėtyje nedidelė, todėl krūvis turėtų išlikti panašus. `;
+  const s = p.lastSeason;
+  const league = s.league === "EuroLeague" ? "Eurolygoje" : "EuroCupe";
+  const playoffs = p.playoffs
+    ? ` Atkrintamosiose vaidmuo ${p.playoffs.minutesPerGame > s.minutesPerGame ? "išaugo" : "sumažėjo"} iki ${p.playoffs.minutesPerGame.toFixed(1)} min.`
+    : "";
 
-  const verdict =
-    p.tier === 1
-      ? "Tai vienas iš pikų, kurių nereikia permąstyti — imti iš karto."
-      : p.tier === 4
-        ? "Fantasy vertė per maža lyginant su alternatyvomis šiame raunde."
-        : "Gera vertė, jei aukštesnės pakopos žaidėjai jau išrinkti.";
-
-  return `${p.name} pernai gavo ${p.min.toFixed(1)} min. per rungtynes ir buvo vienas iš pagrindinių ${p.lastTeam} variantų. ${context}${verdict}`;
+  return `${p.name} pernai ${league} sužaidė ${s.gamesPlayed} rungtynes po ${s.minutesPerGame.toFixed(1)} min. ir rinko ${s.modernFP.toFixed(1)} Modern taško.${playoffs} Skaičiai yra pernykščiai — AI vertinimas dar nepaleistas, tad vaidmens pokytis neįvertintas.`;
 }
 
+/** Kol nėra AI prognozės, artimiausias sąžiningas spėjimas — pernykštės minutės. */
 export function projectedMinutes(p: Player): string {
-  const value =
-    p.lastLeague === "-"
-      ? 12 + (p.id % 5)
-      : Math.round(p.min * (p.status === "doubtful" ? 0.85 : 1.02));
-  return `${value}.0`;
+  if (p.evaluation) return p.evaluation.projectedMinutes.toFixed(1);
+  if (!p.lastSeason) return "—";
+  return p.min.toFixed(1);
 }
 
 export function lastSeasonLine(p: Player): string {
