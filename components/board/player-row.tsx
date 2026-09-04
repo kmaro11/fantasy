@@ -81,7 +81,26 @@ export function PlayerRow({ player, taken }: { player: Player; taken: Pick | und
       >
         {noData || player.min === 0 ? "—" : player.min.toFixed(1)}
       </div>
-      <div className="text-right font-medium font-mono text-[13px] text-fg-strong">
+      {/*
+        Du skirtingi skaičiai, sąmoningai atskirti. „PERNAI" — apskaičiuotas
+        Modern FP iš tikros statistikos; „PROGN." — AI prognozė ateinančiam
+        sezonui. Anksčiau čia buvo tik vienas stulpelis, ir po vertinimo jis
+        nepastebimai virsdavo iš vieno į kitą.
+      */}
+      <div
+        className="text-right font-mono text-[12px] text-fg-dim"
+        title={
+          other
+            ? "Kitos lygos statistika — Modern FP iš jos neskaičiuojamas"
+            : "Pernykštis Modern FP"
+        }
+      >
+        {player.lastSeasonModernFP == null ? "—" : player.lastSeasonModernFP.toFixed(1)}
+      </div>
+      <div
+        className="text-right font-medium font-mono text-[13px] text-fg-strong"
+        title={player.evaluation ? `AI prognozė (${player.evaluation.confidence})` : undefined}
+      >
         {noData && !player.evaluation ? "—" : player.fp.toFixed(1)}
       </div>
       <div className="text-center">

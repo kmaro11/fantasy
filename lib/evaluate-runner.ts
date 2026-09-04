@@ -17,6 +17,9 @@ import type { Evaluation, Player } from "./types";
 /** Kiek rungtynių laikome pakankama imtimi, kad vaidmuo būtų aiškus. */
 const STABLE_SAMPLE_GAMES = 15;
 
+/** Po tiek vienodų klaidų iš eilės paleidimas stabdomas. */
+const REPEAT_LIMIT = 3;
+
 function sameClub(player: Player): boolean {
   const now = player.team.toLowerCase().replace(/[^a-z]/g, "");
   const before = (player.lastSeason?.club ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -103,6 +106,9 @@ function toEvaluation(raw: ApiEvaluation): Evaluation {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Klaida, žinanti, ar verta kartoti (`retryable`) ir ar verta tęsti (`fatal`). */
+type RunError = Error & { retryable?: boolean; fatal?: boolean };
+
 async function evaluateOne(player: Player, signal?: AbortSignal): Promise<Evaluation> {
   const res = await fetch("/api/evaluate", {
     method: "POST",
@@ -115,11 +121,14 @@ async function evaluateOne(player: Player, signal?: AbortSignal): Promise<Evalua
     evaluation?: ApiEvaluation;
     error?: string;
     retryable?: boolean;
+    fatal?: boolean;
   };
   if (!res.ok || !body.evaluation) {
-    const error = new Error(body.error ?? `Vertinimo klaida (${res.status})`);
+    const error = new Error(body.error ?? `Vertinimo klaida (${res.status})`) as RunError;
     // 503 be rakto kartoti beprasmiška — tai konfigūracijos, ne tinklo problema.
-    (error as Error & { retryable?: boolean }).retryable = body.retryable ?? res.status !== 503;
+    error.retryable = body.retryable ?? res.status !== 503;
+    // Be rakto ar be kreditų nėra prasmės eiti prie kito žaidėjo — sustojam visai.
+    error.fatal = body.fatal ?? res.status === 503;
     throw error;
   }
   return toEvaluation(body.evaluation);
@@ -150,6 +159,11 @@ export interface RunSummary {
   auto: number;
   skipped: number;
   failed: { name: string; error: string }[];
+  /**
+   * Užpildyta, kai paleidimas nutrauktas nepataisoma klaida. Likę žaidėjai
+   * NEBUVO bandyti — jų nėra nei `failed`, nei `skipped` sąraše.
+   */
+  stoppedBecause?: { error: string; remaining: number };
 }
 
 /**
@@ -163,6 +177,15 @@ export async function runEvaluation(options: RunOptions): Promise<RunSummary> {
 
   const summary: RunSummary = { evaluated: 0, auto: 0, skipped: 0, failed: [] };
   let done = 0;
+
+  /**
+   * Antroji gynybos linija prieš beprasmį sukimąsi. Serveris pažymi žinomas
+   * paskyros lygio kliūtis, bet formuluotės keičiasi, o vieno žaidėjo klaida
+   * nuo visuotinės tekstu ne visada atskiriama. Užtat trys IŠ EILĖS vienodos
+   * klaidos reiškia tą patį nepriklausomai nuo teksto: kliūtis ne žaidėjuje.
+   */
+  let repeatedError = "";
+  let repeats = 0;
 
   for (const player of players) {
     if (signal?.aborted) break;
@@ -209,16 +232,27 @@ export async function runEvaluation(options: RunOptions): Promise<RunSummary> {
     }
 
     let lastError = "";
+    let fatal = false;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         onResult(sourceId, await evaluateOne(player, signal));
         summary.evaluated++;
         lastError = "";
+        repeats = 0;
+        repeatedError = "";
         break;
       } catch (cause) {
         if (signal?.aborted) return summary;
         lastError = cause instanceof Error ? cause.message : String(cause);
-        const retryable = (cause as Error & { retryable?: boolean }).retryable !== false;
+        fatal = (cause as RunError).fatal === true;
+        if (fatal) break;
+        if (attempt === 1) {
+          repeats = lastError === repeatedError ? repeats + 1 : 1;
+          repeatedError = lastError;
+          if (repeats >= REPEAT_LIMIT) fatal = true;
+        }
+        if (fatal) break;
+        const retryable = (cause as RunError).retryable !== false;
         if (!retryable || attempt === maxAttempts) break;
         // Eksponentinis atsitraukimas: 1s, 2s, 4s.
         await sleep(1000 * 2 ** (attempt - 1));
@@ -226,6 +260,24 @@ export async function runEvaluation(options: RunOptions): Promise<RunSummary> {
     }
 
     if (lastError) summary.failed.push({ name: player.name, error: lastError });
+
+    if (fatal) {
+      summary.stoppedBecause = {
+        error:
+          repeats >= REPEAT_LIMIT
+            ? `${lastError} (pasikartojo ${repeats} kartus iš eilės)`
+            : lastError,
+        remaining: players.length - done,
+      };
+      onProgress?.({
+        done,
+        total: players.length,
+        current: player.name,
+        failed: summary.failed.length,
+        skipped: summary.skipped,
+      });
+      return summary;
+    }
     onProgress?.({
       done,
       total: players.length,

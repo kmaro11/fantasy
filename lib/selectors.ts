@@ -39,6 +39,9 @@ export function visiblePlayers(
       const tb = taken.has(b.id) ? 1 : 0;
       if (ta !== tb) return ta - tb;
       if (sortKey === "name") return a.name.localeCompare(b.name) * sortDir * -1;
+      // `lastFp` gyvena `lastSeasonModernFP`, ne vienvardžiame lauke.
+      if (sortKey === "lastFp")
+        return ((a.lastSeasonModernFP ?? 0) - (b.lastSeasonModernFP ?? 0)) * sortDir;
       return (a[sortKey] - b[sortKey]) * sortDir;
     });
 }

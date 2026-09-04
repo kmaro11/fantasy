@@ -29,12 +29,25 @@ export function PlayerTable() {
         </button>
         <div>POZ</div>
         <div>KOMANDA</div>
-        <div>PERNAI</div>
+        <div>PERNYKŠTĖ KOMANDA</div>
         <button type="button" onClick={() => toggleSort("min")} className="text-right">
           MIN{arrow("min")}
         </button>
-        <button type="button" onClick={() => toggleSort("fp")} className="text-right">
-          FP/G{arrow("fp")}
+        <button
+          type="button"
+          onClick={() => toggleSort("lastFp")}
+          className="text-right"
+          title="Pernykštis Modern FP — apskaičiuotas iš tikros statistikos"
+        >
+          PERNAI{arrow("lastFp")}
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleSort("fp")}
+          className="text-right"
+          title="AI prognozė ateinančiam sezonui"
+        >
+          PROGN.{arrow("fp")}
         </button>
         <div className="text-center">BŪKLĖ</div>
         <div />

@@ -128,6 +128,30 @@ function playerBrief(player: Player): string {
   return lines.filter(Boolean).join("\n");
 }
 
+/**
+ * Ar klaida nutraukia VISĄ paleidimą, o ne tik šį žaidėją?
+ *
+ * Skirtumas praktinis. Kai modelis suklumpa ties vienu žaidėju, likusius verta
+ * bandyti toliau. Bet kai baigėsi kreditai arba raktas neteisingas, kiekviena
+ * tolesnė užklausa grįš su ta pačia klaida — 170 žaidėjų sąraše tai 170 tuščių
+ * skambučių ir kelios minutės laukimo, kol paaiškės tai, kas aišku po pirmo.
+ *
+ * `401`/`403` fatališki visada. `400` — tik tada, kai kliūtis yra paskyros, o ne
+ * šio žaidėjo: pasibaigę kreditai, pasiektas mėnesio limitas, sustabdyta
+ * organizacija. Kitos `400` klaidos (pvz. per ilgas kontekstas) liečia vieną
+ * žaidėją, tad likusius verta bandyti toliau.
+ *
+ * Sąrašas neišvengiamai nepilnas — API pranešimų formuluotės keičiasi, ir viena
+ * jau prasprūdo. Todėl tai tik pirmoji gynybos linija; antroji, nepriklausanti
+ * nuo teksto, yra vienodų klaidų skaitiklis `runEvaluation` viduje.
+ */
+const ACCOUNT_BLOCKED = /credit balance|usage limits?|spend limit|billing|suspended|deactivated/i;
+
+function isFatal(error: InstanceType<typeof Anthropic.APIError>): boolean {
+  if (error.status === 401 || error.status === 403) return true;
+  return error.status === 400 && ACCOUNT_BLOCKED.test(error.message);
+}
+
 export async function POST(request: Request) {
   const { player } = (await request.json()) as { player?: Player };
   if (!player) return Response.json({ error: "Trūksta `player` lauko." }, { status: 400 });
@@ -176,7 +200,8 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error: `Claude API klaida ${error.status}: ${error.message}`,
-          retryable: error.status >= 500,
+          retryable: (error.status ?? 0) >= 500,
+          fatal: isFatal(error),
         },
         { status: 502 },
       );

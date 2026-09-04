@@ -162,7 +162,8 @@ export interface Pick {
   mine: boolean;
 }
 
-export type SortKey = "name" | "min" | "fp";
+/** `fp` — AI prognozė ateinančiam sezonui; `lastFp` — pernykštis Modern FP. */
+export type SortKey = "name" | "min" | "fp" | "lastFp";
 
 export type SortDir = 1 | -1;
 

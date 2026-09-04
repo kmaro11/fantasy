@@ -265,6 +265,13 @@ export default function SettingsPage() {
               <div className="mt-2.5 rounded-[3px] border border-line bg-cell px-2 py-1.5 text-[11px] text-fg-mild leading-[1.5]">
                 AI įvertino {summary.evaluated} · automatiškai {summary.auto} · praleista{" "}
                 {summary.skipped}
+                {summary.stoppedBecause && (
+                  <div className="mt-1 text-danger-fg">
+                    Paleidimas SUSTABDYTAS — {summary.stoppedBecause.error} Likę{" "}
+                    {summary.stoppedBecause.remaining} žaidėjai net nebuvo bandyti; sutvarkius
+                    priežastį paleisk dar kartą, jau įvertinti bus praleisti.
+                  </div>
+                )}
                 {summary.failed.length > 0 && (
                   <div className="mt-1 text-danger-fg">
                     nepavyko {summary.failed.length}:{" "}
