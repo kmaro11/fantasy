@@ -100,7 +100,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const stored = storage.read<StoredDataset | null>(storage.KEYS.players, null);
     if (stored?.players?.length) setDataset(stored);
     setPairings(storage.loadPairings());
-    setEvaluations(storage.loadEvaluations());
+
+    // Vietiniai vertinimai + serverio failas. Failas viršesnis: jis bendras
+    // visoms naršyklėms ir išlieka išvalius localStorage.
+    const local = storage.loadEvaluations();
+    setEvaluations(local);
+    fetch("/api/evaluations")
+      .then((res) => (res.ok ? res.json() : { evaluations: {} }))
+      .then((body: { evaluations?: Record<string, Evaluation> }) => {
+        const server = body.evaluations ?? {};
+        if (Object.keys(server).length === 0) return;
+        setEvaluations((prev) => {
+          const next = { ...prev, ...server };
+          storage.saveEvaluations(next);
+          return next;
+        });
+      })
+      .catch(() => {});
+
     setRestored(true);
   }, []);
 
@@ -193,11 +210,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       storage.saveEvaluations(next);
       return next;
     });
+    // Į failą — kad nedingtų išvalius naršyklę. Nepavykus lieka bent localStorage.
+    void fetch("/api/evaluations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceId, evaluation }),
+    }).catch(() => {});
   }, []);
 
   const clearEvaluations = useCallback(() => {
     setEvaluations({});
     storage.saveEvaluations({});
+    void fetch("/api/evaluations", { method: "DELETE" }).catch(() => {});
   }, []);
 
   const players = useMemo(

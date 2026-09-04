@@ -68,7 +68,5 @@ Grąžink TIK JSON, be jokio teksto aplink, be markdown žymėjimo:
   "projected_minutes": skaičius,
   "confidence": "high" | "medium" | "low",
   "reasoning": "2-3 sakiniai lietuviškai. Konkrečiai apie minutes ir vaidmenį.",
-  "risk_flags": ["konkurencija" | "nauja_lyga" | "nestabilus_vaidmuo" | "prastas_taiklumas" | "daug_klaidu" | "pražangos"],
-  "availability": "Informacija apie traumą ar būklę ir kiek rungtynių gali praleisti. Neutraliai, be rekomendacijos. Jei sveikas, rašyk null.",
-  "upside": "Vienas sakinys: kas turėtų nutikti, kad jis viršytų prognozę. Jei nėra realaus scenarijaus, rašyk null."
+  "availability": "Informacija apie traumą ar būklę ir kiek rungtynių gali praleisti. Neutraliai, be rekomendacijos. Jei sveikas, rašyk null."
 }

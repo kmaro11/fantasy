@@ -59,9 +59,7 @@ export function ncaaEvaluation(player: Player): Evaluation {
     projectedMinutes: 0,
     confidence: "low",
     reasoning: `Pernai žaidė NCAA${o?.club ? ` (${o.club})` : ""} — jaunas žaidėjas be profesionalios Europos imties. Nevertinama: studentų lygos statistika Eurolygai nepalyginama.`,
-    riskFlags: ["nauja_lyga", "nestabilus_vaidmuo"],
     availability: player.status === "ready" ? null : `Būklė: ${player.status}.`,
-    upside: null,
     source: "auto",
     evaluatedAt: new Date().toISOString(),
   };
@@ -75,9 +73,7 @@ export function autoEvaluation(player: Player): Evaluation {
     projectedMinutes: Number(player.min.toFixed(1)),
     confidence: player.gp >= 25 ? "high" : "medium",
     reasoning: `Liko toje pačioje komandoje (${player.team}) tuo pačiu vaidmeniu. Pernai ${player.gp} rungtynės po ${player.min.toFixed(1)} min. ir ${fp.toFixed(1)} Modern taško — prognozė remiasi tiesiogiai šiais skaičiais, be AI korekcijos.`,
-    riskFlags: [],
     availability: player.status === "ready" ? null : `Būklė: ${player.status}.`,
-    upside: null,
     source: "auto",
     evaluatedAt: new Date().toISOString(),
   };
@@ -89,9 +85,7 @@ interface ApiEvaluation {
   projected_minutes: number;
   confidence: Evaluation["confidence"];
   reasoning: string;
-  risk_flags: string[];
   availability: string | null;
-  upside: string | null;
 }
 
 function toEvaluation(raw: ApiEvaluation): Evaluation {
@@ -101,9 +95,7 @@ function toEvaluation(raw: ApiEvaluation): Evaluation {
     projectedMinutes: raw.projected_minutes,
     confidence: raw.confidence,
     reasoning: raw.reasoning,
-    riskFlags: raw.risk_flags ?? [],
     availability: raw.availability,
-    upside: raw.upside,
     source: "ai",
     evaluatedAt: new Date().toISOString(),
   };

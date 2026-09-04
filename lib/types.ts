@@ -117,9 +117,7 @@ export interface Evaluation {
   projectedMinutes: number;
   confidence: "high" | "medium" | "low";
   reasoning: string;
-  riskFlags: string[];
   availability: string | null;
-  upside: string | null;
   /** `ai` — modelio atsakymas; `auto` — priskirta pagal slenksčius be užklausos. */
   source: "ai" | "auto";
   evaluatedAt: string;

@@ -199,30 +199,10 @@ export function DetailPanel() {
         </div>
         <p className="text-pretty text-[13px] text-fg-mild leading-[1.5]">{aiSummary(player)}</p>
 
-        {evaluation?.riskFlags?.length ? (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {evaluation.riskFlags.map((flag) => (
-              <span
-                key={flag}
-                className="rounded-[2px] border border-warn-line bg-warn-bg px-1.5 py-0.5 font-mono text-[10px] text-warn-fg"
-              >
-                {flag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
         {evaluation?.availability ? (
           <div className="mt-2 rounded-[3px] border border-line-strong bg-cell px-2 py-1.5 text-[11px] text-fg-mild leading-[1.4]">
             <span className="text-fg-dim">Būklė: </span>
             {evaluation.availability}
-          </div>
-        ) : null}
-
-        {evaluation?.upside ? (
-          <div className="mt-1.5 text-[11px] text-fg-label leading-[1.4]">
-            <span className="text-fg-dim">Kas gali viršyti prognozę: </span>
-            {evaluation.upside}
           </div>
         ) : null}
 

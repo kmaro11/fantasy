@@ -14,9 +14,7 @@ export const EVALUATION_SCHEMA = z.object({
   projected_minutes: z.number(),
   confidence: z.enum(["high", "medium", "low"]),
   reasoning: z.string(),
-  risk_flags: z.array(z.string()),
   availability: z.string().nullable(),
-  upside: z.string().nullable(),
 });
 
 export type EvaluationResponse = z.infer<typeof EVALUATION_SCHEMA>;
