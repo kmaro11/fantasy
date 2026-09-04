@@ -174,4 +174,6 @@ export interface Filters {
   league: League | "ALL";
   team: string | "ALL";
   showTaken: boolean;
+  /** Rodyti tik pasižymėtus žaidėjus. */
+  watchedOnly: boolean;
 }

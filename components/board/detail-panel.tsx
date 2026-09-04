@@ -24,7 +24,7 @@ function SectionLabel({ children }: { children: string }) {
 }
 
 export function DetailPanel() {
-  const { selectedId, select, history, take } = useDraft();
+  const { selectedId, select, history, take, toggleWatch, isWatched } = useDraft();
   const { players } = useData();
   if (selectedId === null) return null;
 
@@ -39,6 +39,7 @@ export function DetailPanel() {
   const evaluation = player.evaluation;
 
   const state = taken ? (taken.mine ? "mano sudėtyje" : "paimtas") : "laisvas";
+  const watched = isWatched(player.sourceId);
 
   return (
     <aside className="flex w-[min(400px,34vw)] min-w-[320px] flex-none flex-col overflow-y-auto border-line border-r bg-panel">
@@ -55,6 +56,20 @@ export function DetailPanel() {
             {TIER_LABEL[player.tier]}
           </div>
         </div>
+        {/* Žymėti patogiausia čia pat — sprendimas gimsta perskaičius vertinimą. */}
+        <button
+          type="button"
+          disabled={!player.sourceId}
+          onClick={() => player.sourceId && toggleWatch(player.sourceId)}
+          title={watched ? "Pašalinti iš pasižymėtų" : "Pasižymėti"}
+          className={`flex-none rounded-[3px] border px-[7px] py-[3px] text-[13px] leading-none disabled:opacity-30 ${
+            watched
+              ? "border-accent-star-line bg-accent-star-bg text-accent-star"
+              : "border-control-line bg-control text-fg-dim hover:text-fg-soft"
+          }`}
+        >
+          {watched ? "★" : "☆"}
+        </button>
         <button
           type="button"
           onClick={() => select(null)}

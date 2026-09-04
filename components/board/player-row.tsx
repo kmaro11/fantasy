@@ -22,10 +22,11 @@ const STATUS_CLASS: Record<Status, string> = {
 };
 
 export function PlayerRow({ player, taken }: { player: Player; taken: Pick | undefined }) {
-  const { select, take } = useDraft();
+  const { select, take, toggleWatch, isWatched } = useDraft();
   const other = player.lastSeasonOther ?? null;
   // „Nėra duomenų" lieka tik tada, kai nėra NEI Eurolygos, NEI kitos lygos.
   const noData = player.lastLeague === "-" && !other;
+  const watched = isWatched(player.sourceId);
 
   return (
     <div
@@ -34,6 +35,23 @@ export function PlayerRow({ player, taken }: { player: Player; taken: Pick | und
       }`}
     >
       <div className={`h-5 w-1.5 rounded-[1px] ${TIER_BG[player.tier]}`} />
+
+      {/*
+        Žymėjimas atskiroje skiltyje, o ne tarp mygtukų dešinėje: sąrašas ilgas,
+        ir akis turi rasti pasižymėtus vienu perbėgimu, o ne skaitydama kiekvieną
+        eilutę iki galo. Rakinama pagal `sourceId` — žr. `storage.loadWatchlist`.
+      */}
+      <button
+        type="button"
+        disabled={!player.sourceId}
+        onClick={() => player.sourceId && toggleWatch(player.sourceId)}
+        title={watched ? "Pašalinti iš pasižymėtų" : "Pasižymėti"}
+        className={`text-[13px] leading-none transition-colors disabled:opacity-30 ${
+          watched ? "text-accent-star" : "text-fg-dim hover:text-fg-soft"
+        }`}
+      >
+        {watched ? "★" : "☆"}
+      </button>
 
       <button
         type="button"

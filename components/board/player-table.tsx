@@ -9,10 +9,10 @@ import { FilterBar } from "./filter-bar";
 import { PlayerRow } from "./player-row";
 
 export function PlayerTable() {
-  const { history, filters, sortKey, sortDir, toggleSort } = useDraft();
+  const { history, filters, sortKey, sortDir, toggleSort, watchlist } = useDraft();
   const { players } = useData();
   const taken = takenMap(history);
-  const rows = visiblePlayers(players, filters, taken, sortKey, sortDir);
+  const rows = visiblePlayers(players, filters, taken, sortKey, sortDir, watchlist);
 
   const arrow = (key: SortKey) => (sortKey === key ? (sortDir === -1 ? " ↓" : " ↑") : "");
 
@@ -24,6 +24,9 @@ export function PlayerTable() {
         className={`grid ${BOARD_GRID} h-[26px] flex-none items-center border-line-head border-b bg-head px-3 text-[10px] text-fg-label tracking-[0.1em]`}
       >
         <div />
+        <div className="text-center" title="Pasižymėti žaidėjai">
+          ★
+        </div>
         <button type="button" onClick={() => toggleSort("name")} className="text-left">
           ŽAIDĖJAS{arrow("name")}
         </button>

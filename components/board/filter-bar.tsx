@@ -27,7 +27,7 @@ const LEAGUES: [League | "ALL", string][] = [
 ];
 
 export function FilterBar({ shown, total }: { shown: number; total: number }) {
-  const { filters, setFilter } = useDraft();
+  const { filters, setFilter, watchlist } = useDraft();
   const { teams } = useData();
 
   return (
@@ -99,6 +99,21 @@ export function FilterBar({ shown, total }: { shown: number; total: number }) {
           </option>
         ))}
       </select>
+
+      {/* Pasižymėtų filtras — greta pakopų, nes naudojamas taip pat dažnai. */}
+      <button
+        type="button"
+        onClick={() => setFilter({ watchedOnly: !filters.watchedOnly })}
+        className={`flex items-center gap-1.5 rounded-[3px] border px-[9px] py-1 font-semibold text-[12px] ${
+          filters.watchedOnly
+            ? "border-accent-star-line bg-accent-star-bg text-accent-star"
+            : "border-chip-line bg-chip text-fg-muted"
+        }`}
+      >
+        <span className="leading-none">{filters.watchedOnly ? "★" : "☆"}</span>
+        Pasižymėti
+        <span className="font-mono text-[11px] opacity-70">{watchlist.length}</span>
+      </button>
 
       <div className="flex-1" />
 

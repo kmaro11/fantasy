@@ -14,8 +14,9 @@ export function myRoster(history: Pick[], players: Player[]): Player[] {
   return history.filter((h) => h.mine).flatMap((h) => byId.get(h.playerId) ?? []);
 }
 
-function matches(p: Player, f: Filters, taken: Map<number, Pick>): boolean {
+function matches(p: Player, f: Filters, taken: Map<number, Pick>, watchlist: Set<string>): boolean {
   if (taken.has(p.id) && !f.showTaken) return false;
+  if (f.watchedOnly && !(p.sourceId && watchlist.has(p.sourceId))) return false;
   if (f.query && !p.name.toLowerCase().includes(f.query.toLowerCase())) return false;
   if (f.pos !== "ALL" && p.pos !== f.pos) return false;
   if (f.tier !== "ALL" && p.tier !== f.tier) return false;
@@ -31,9 +32,11 @@ export function visiblePlayers(
   taken: Map<number, Pick>,
   sortKey: SortKey,
   sortDir: SortDir,
+  watchlist: string[] = [],
 ): Player[] {
+  const watched = new Set(watchlist);
   return players
-    .filter((p) => matches(p, filters, taken))
+    .filter((p) => matches(p, filters, taken, watched))
     .sort((a, b) => {
       const ta = taken.has(a.id) ? 1 : 0;
       const tb = taken.has(b.id) ? 1 : 0;

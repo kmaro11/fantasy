@@ -62,6 +62,12 @@
   --color-accent-hover: #54d47f;
   --color-accent-line: #2c6b43;
 
+  /* pasižymėti žaidėjai — gintarinė, kad nesusilietų nei su žalia „imu aš",
+     nei su pakopų spalvomis */
+  --color-accent-star: #e0a93c;
+  --color-accent-star-line: #7a5a1c;
+  --color-accent-star-bg: #221a09;
+
   /* atspalviai (statusai, pasitikėjimas) */
   --color-tint-red: #241413;
   --color-tint-amber: #241f0f;

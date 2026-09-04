@@ -18,6 +18,8 @@ interface DraftState {
   filters: Filters;
   sortKey: SortKey;
   sortDir: SortDir;
+  /** Pasižymėti žaidėjai pagal `sourceId`. */
+  watchlist: string[];
 }
 
 type Action =
@@ -27,14 +29,25 @@ type Action =
   | { type: "restore"; history: Pick[] }
   | { type: "select"; playerId: number | null }
   | { type: "filter"; patch: Partial<Filters> }
-  | { type: "sort"; key: SortKey };
+  | { type: "sort"; key: SortKey }
+  | { type: "watch"; sourceId: string }
+  | { type: "restoreWatchlist"; watchlist: string[] };
 
 const INITIAL: DraftState = {
   history: [],
   selectedId: null,
-  filters: { query: "", pos: "ALL", tier: "ALL", league: "ALL", team: "ALL", showTaken: false },
+  filters: {
+    query: "",
+    pos: "ALL",
+    tier: "ALL",
+    league: "ALL",
+    team: "ALL",
+    showTaken: false,
+    watchedOnly: false,
+  },
   sortKey: "fp",
   sortDir: -1,
+  watchlist: [],
 };
 
 function reducer(state: DraftState, action: Action): DraftState {
@@ -62,6 +75,15 @@ function reducer(state: DraftState, action: Action): DraftState {
         sortKey: action.key,
         sortDir: state.sortKey === action.key ? ((state.sortDir * -1) as SortDir) : -1,
       };
+    case "watch":
+      return {
+        ...state,
+        watchlist: state.watchlist.includes(action.sourceId)
+          ? state.watchlist.filter((id) => id !== action.sourceId)
+          : [...state.watchlist, action.sourceId],
+      };
+    case "restoreWatchlist":
+      return { ...state, watchlist: action.watchlist };
   }
 }
 
@@ -72,6 +94,9 @@ interface DraftContextValue extends DraftState {
   select: (playerId: number | null) => void;
   setFilter: (patch: Partial<Filters>) => void;
   toggleSort: (key: SortKey) => void;
+  /** Prideda arba pašalina žaidėją iš pasižymėtų sąrašo. */
+  toggleWatch: (sourceId: string) => void;
+  isWatched: (sourceId: string | undefined) => boolean;
   canUndo: boolean;
   settings: storage.StoredSettings;
   setSettings: (patch: Partial<storage.StoredSettings>) => void;
@@ -87,6 +112,7 @@ export function DraftProvider({ children }: { children: ReactNode }) {
   // Draft'o eiga turi išlikti perkrovus naršyklę — vidury drafto tai kritinė savybė.
   useEffect(() => {
     dispatch({ type: "restore", history: storage.loadHistory() });
+    dispatch({ type: "restoreWatchlist", watchlist: storage.loadWatchlist() });
     setSettingsState(storage.loadSettings());
     setRestored(true);
   }, []);
@@ -94,6 +120,10 @@ export function DraftProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (restored) storage.saveHistory(state.history);
   }, [state.history, restored]);
+
+  useEffect(() => {
+    if (restored) storage.saveWatchlist(state.watchlist);
+  }, [state.watchlist, restored]);
 
   const value = useMemo<DraftContextValue>(
     () => ({
@@ -104,6 +134,8 @@ export function DraftProvider({ children }: { children: ReactNode }) {
       select: (playerId) => dispatch({ type: "select", playerId }),
       setFilter: (patch) => dispatch({ type: "filter", patch }),
       toggleSort: (key) => dispatch({ type: "sort", key }),
+      toggleWatch: (sourceId) => dispatch({ type: "watch", sourceId }),
+      isWatched: (sourceId) => (sourceId ? state.watchlist.includes(sourceId) : false),
       canUndo: state.history.length > 0,
       settings,
       setSettings: (patch) =>

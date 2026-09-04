@@ -17,6 +17,7 @@ export const KEYS = {
   evaluations: `${PREFIX}:evaluations`,
   history: `${PREFIX}:history`,
   settings: `${PREFIX}:settings`,
+  watchlist: `${PREFIX}:watchlist`,
 } as const;
 
 /** Serverio pusėje `localStorage` neegzistuoja, o privačiame režime gali mesti. */
@@ -76,3 +77,13 @@ export const saveEvaluations = (evaluations: Record<string, Evaluation>) =>
 
 export const loadSettings = () => read<StoredSettings>(KEYS.settings, DEFAULT_SETTINGS);
 export const saveSettings = (settings: StoredSettings) => write(KEYS.settings, settings);
+
+/**
+ * Pasižymėti žaidėjai — rakinami pagal `sourceId`, ne pagal `id`.
+ *
+ * Sąrašas ruošiamas PRIEŠ draftą ir turi pergyventi pakartotinį duomenų importą.
+ * `id` yra pozicija sąraše ir po naujo importo pasislenka — tada pasižymėtas
+ * Valančiūnas taptų pasižymėtu kažkuo kitu. `sourceId` nesikeičia.
+ */
+export const loadWatchlist = () => read<string[]>(KEYS.watchlist, []);
+export const saveWatchlist = (ids: string[]) => write(KEYS.watchlist, ids);
