@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ROSTER_SIZE } from "@/lib/config";
 import { useData } from "@/lib/data-store";
 import { useDraft } from "@/lib/draft-store";
@@ -7,6 +8,7 @@ import { myRoster, rosterNeeds } from "@/lib/selectors";
 import { snakeInfo } from "@/lib/snake";
 import { TIER_BG } from "@/lib/tiers";
 import type { Position } from "@/lib/types";
+import { RosterReview } from "./roster-review";
 
 const POSITIONS: Position[] = ["G", "F", "C"];
 
@@ -19,6 +21,7 @@ export function RosterSidebar() {
   const snake = snakeInfo(settings.myPickSlot, settings.teamCount, ROSTER_SIZE, history.length);
   const myTurn = snake.untilNext === 0;
 
+  const [reviewOpen, setReviewOpen] = useState(false);
   const slots = Array.from({ length: ROSTER_SIZE }, (_, i) => roster[i]);
   const recent = [...history].reverse().slice(0, 7);
 
@@ -35,7 +38,17 @@ export function RosterSidebar() {
           <div className="font-bold font-mono text-[22px] text-fg-strong">{totalFp.toFixed(1)}</div>
           <div className="text-[11px] text-fg-label">prognozuojami FP / rungtynės</div>
         </div>
+        <button
+          type="button"
+          onClick={() => setReviewOpen(true)}
+          disabled={!roster.length}
+          className="mt-2 w-full rounded-[3px] border border-control-line bg-control py-[6px] font-semibold text-[12px] text-fg-soft hover:bg-control-hover hover:text-fg disabled:opacity-40"
+        >
+          Įvertinti sudėtį
+        </button>
       </div>
+
+      {reviewOpen && <RosterReview onClose={() => setReviewOpen(false)} />}
 
       <div
         className={`border-line border-b px-3 py-2 ${myTurn ? "bg-tint-green" : ""}`}

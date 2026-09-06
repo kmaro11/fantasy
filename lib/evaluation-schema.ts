@@ -19,6 +19,26 @@ export const EVALUATION_SCHEMA = z.object({
 
 export type EvaluationResponse = z.infer<typeof EVALUATION_SCHEMA>;
 
+/**
+ * Visos sudėties vertinimo schema. Pora su `prompts/roster-evaluation.md`.
+ *
+ * Sąmoningai BE bendros taškų sumos. Ji apskaičiuojama iš `projectedFP`
+ * kliento pusėje ir modeliui perduodama kaip duotybė — prašyti jos atgal
+ * reikštų prašyti modelio sudėti trylika skaičių, o tai vienintelė šios
+ * užduoties dalis, kurią kodas atlieka be klaidų.
+ */
+export const ROSTER_SCHEMA = z.object({
+  verdict: z.enum(["Labai stipri", "Stipri", "Vidutinė", "Silpna"]),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  weak_links: z.array(z.object({ name: z.string(), note: z.string() })),
+  balance: z.string(),
+  confidence: z.enum(["high", "medium", "low"]),
+});
+
+export type RosterResponse = z.infer<typeof ROSTER_SCHEMA>;
+
 /** Modelis kartais vis tiek apvynioja JSON į ```json aptvarą — nuimame. */
 export function stripFence(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
